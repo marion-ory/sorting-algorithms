@@ -28,5 +28,4 @@ class TriBulle:
 # je pars du principe que ma loiste à trier est fausse
 # pour trier dans ma liste je la parcours et je fais un passage à chaque tour
 # des que je trouve des valeurs à permutter je les switch par ordre croissant ou decroissant par ex
-# est ce que c est bien ça?
 # je ne suis pas sur d avoir bien compris toute les lignes de codes
