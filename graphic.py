@@ -104,16 +104,16 @@ def update(liste_etape, patches):
     return patches
 
 
-generateur = tribulle(ma_liste)
+generateur = tribulle(ma_liste)  # generateur contient la liste etape par etape
 
 ani = animation.FuncAnimation(
-    fig,
-    update,
-    frames=generateur,
+    fig,  # = fenetre
+    update,  # change les part en couleur
+    frames=generateur,  # chaque etape que le yield va nous donner
     fargs=(patches,),
     interval=50,  # Vitesse : 50ms entre chaque image (baisse pour accélérer)
     repeat=False,
-    blit=True,
+    blit=True,  # optimisation change juste la couleur des part
     cache_frame_data=False,
 )
 
