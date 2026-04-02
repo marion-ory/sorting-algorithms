@@ -1,23 +1,19 @@
 import customtkinter as ctk
-import time
-import random
-import json
 import os
-import psutil  # Pour la RAM
+import engine  # Indispensable pour lancer les calculs de comparaison
+import sorting
 from analysepage import AnalysePage
-
-# Attention : vérifie que tes fonctions s'appellent bien TriBulle ou tribulle (la casse compte !)
-from sorting import TriBulle, TriInsertion, TriFusion
 
 
 class StableMenu(ctk.CTkToplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Tris Stables - Configuration")
-        self.geometry("500x650")  # Un peu plus haut pour le texte
-
-        # S'assurer que la fenêtre passe devant
+        self.geometry("500x700")
         self.attributes("-topmost", True)
+
+        # --- INITIALISATION DU MOTEUR ---
+        self.runner = engine.BenchmarkRunner()
 
         # --- TITRE ---
         self.label = ctk.CTkLabel(
@@ -25,89 +21,108 @@ class StableMenu(ctk.CTkToplevel):
         )
         self.label.pack(pady=20)
 
+        # --- CHOIX DU FICHIER POUR LA COMPARAISON ---
+        # On a besoin de savoir sur quelle liste comparer les algos !
+        self.label_file = ctk.CTkLabel(self, text="Fichier pour la comparaison :")
+        self.label_file.pack(pady=5)
+
+        self.options_listes = [
+            "json_data/short_rd.json",
+            "json_data/short_rv.json",
+            "json_data/medium_rd.json",
+            "json_data/medium_rv.json",
+            "json_data/large_rv.json",
+            "json_data/large_rd.json",
+            "json_data/xlarge_rv.json",
+            "json_data/xlarge_rd.json",
+        ]
+        self.combo_liste = ctk.CTkComboBox(self, values=self.options_listes, width=250)
+        self.combo_liste.pack(pady=5)
+        self.combo_liste.set("json_data/short_rd.json")
+
         # --- BOUTONS INDIVIDUELS ---
+        # On utilise une Frame pour grouper les boutons de tris
+        self.frame_tris = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_tris.pack(pady=20)
 
-        self.btn_bulle = ctk.CTkButton(
-            self,
+        ctk.CTkButton(
+            self.frame_tris,
             text="Lancer Tri Bulle",
-            # On passe : (parent=self, nom="Tri Bulle", fonction=TriBulle)
-            command=lambda: AnalysePage(self, "Tri Bulle", TriBulle),
-        )
-        self.btn_bulle.pack(pady=10)
+            command=lambda: AnalysePage(self, "Tri Bulle", sorting.TriBulle),
+        ).pack(pady=5)
 
-        self.btn_insertion = ctk.CTkButton(
-            self,
+        ctk.CTkButton(
+            self.frame_tris,
             text="Lancer Tri Insertion",
-            # On passe : (parent=self, nom="Tri par Insertion", fonction=TriInsertion)
-            command=lambda: AnalysePage(self, "Tri par Insertion", TriInsertion),
-        )
-        self.btn_insertion.pack(pady=10)
+            command=lambda: AnalysePage(
+                self, "Tri par Insertion", sorting.TriInsertion
+            ),
+        ).pack(pady=5)
 
-        self.btn_fusion = ctk.CTkButton(
-            self,
+        ctk.CTkButton(
+            self.frame_tris,
             text="Lancer Tri Fusion",
-            # On passe : (parent=self, nom="Tri par Fusion", fonction=TriFusion)
-            command=lambda: AnalysePage(self, "Tri par Fusion", TriFusion),
-        )
-        self.btn_fusion.pack(pady=10)
+            command=lambda: AnalysePage(self, "Tri par Fusion", sorting.TriFusion),
+        ).pack(pady=5)
 
-        # --- SECTION COMPARAISON ---
-        self.separator = ctk.CTkFrame(self, height=2, fg_color="gray")
-        self.separator.pack(fill="x", pady=20, padx=20)
+        # --- SEPARATEUR ---
+        ctk.CTkLabel(self, text="─" * 30).pack(pady=10)
 
-        self.btn_compare = ctk.CTkButton(
+        # --- BOUTON COMPARAISON (Le nouveau !) ---
+        self.btn_compare_stables = ctk.CTkButton(
             self,
-            text=" COMPARER TOUS LES STABLES",
-            fg_color="#2A9D8F",
-            hover_color="#21867A",
-            command=self.comparer_algos,
+            text="📊 COMPARER LES 3 STABLES",
+            fg_color="#457B9D",
+            hover_color="#1D3557",
+            height=50,
+            font=("Arial", 14, "bold"),
+            command=self.afficher_comparaison_stables,
         )
-        self.btn_compare.pack(pady=20)
+        self.btn_compare_stables.pack(pady=20)
 
-        self.result_box = ctk.CTkTextbox(self, width=450, height=200)
-        self.result_box.pack(pady=10)
+    def afficher_comparaison_stables(self):
+        import matplotlib.pyplot as plt
 
-    def comparer_algos(self):
-        chemin_fichier = "json_data/short_rv.json"
-
-        if not os.path.exists(chemin_fichier):
-            self.result_box.delete("0.0", "end")
-            self.result_box.insert("0.0", f"Erreur : {chemin_fichier} introuvable.")
+        nom_fichier = self.combo_liste.get()
+        if not os.path.exists(nom_fichier):
+            print(f"Erreur : {nom_fichier} introuvable")
             return
 
-        with open(chemin_fichier, "r") as f:
-            liste_originale = json.load(f)
+        # 1. Préparation
+        dict_stables = {
+            "Tri Bulle": sorting.TriBulle,
+            "Tri Insertion": sorting.TriInsertion,
+            "Tri Fusion": sorting.TriFusion,
+        }
 
-        # TOUT LE CODE CI-DESSOUS DOIT ÊTRE ALIGNÉ ICI (DANS LA FONCTION)
-        taille = len(liste_originale)
-        resultats = f"📊 COMPARAISON (Fichier: {chemin_fichier} | Taille: {taille})\n"
-        resultats += "-" * 55 + "\n"
-        resultats += f"{'Algorithme':<15} | {'Temps (s)':<12} | {'RAM (MB)':<10}\n"
-        resultats += "-" * 55 + "\n"
+        noms = []
+        temps = []
 
-        # On utilise les noms exacts de tes imports depuis sorting.py
-        algos = {"Bulle": TriBulle, "Insertion": TriInsertion, "Fusion": TriFusion}
-        process = psutil.Process(os.getpid())
+        # 2. Calculs
+        for nom, classe in dict_stables.items():
+            self.runner.lancer(classe, nom_fichier)
+            res = self.runner.resultats[-1]
+            noms.append(nom)
+            temps.append(res["temps"])
 
-        for nom, fonction in algos.items():
-            liste_a_trier = liste_originale.copy()
+        # 3. Graphique
+        fig, ax = plt.subplots(figsize=(8, 6))
+        bars = ax.bar(noms, temps, color=["#E63946", "#1D3557", "#457B9D"])
 
-            mem_avant = process.memory_info().rss / 1024 / 1024
-            start = time.time()
+        ax.set_ylabel("Temps en secondes")
+        ax.set_title(f"Comparaison des Tris Stables\nFichier : {nom_fichier}")
 
-            fonction(liste_a_trier)  # Appel de la fonction
-
-            end = time.time()
-            mem_apres = process.memory_info().rss / 1024 / 1024
-            conso_mem = mem_apres - mem_avant
-
-            resultats += (
-                f"{nom:<15} | {end - start:<12.5f} | {max(0, conso_mem):<10.2f}\n"
+        # Ajout des étiquettes au-dessus des barres
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height,
+                f"{height:.6f}s",
+                ha="center",
+                va="bottom",
+                fontweight="bold",
             )
 
-        self.result_box.delete("0.0", "end")
-        self.result_box.insert("0.0", resultats)
-
-    def lancer_un_tri(self, nom):
-        # Ici tu pourras plus tard appeler la visualisation spécifique
-        print(f"Lancement du {nom}...")
+        plt.tight_layout()
+        plt.show()
