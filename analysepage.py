@@ -1,19 +1,21 @@
 import customtkinter as ctk
-import json
 import os
-import time
-import psutil  # Pour la RAM (pense à faire : pip install psutil)
+import json
+import engine  # Importation de ton fichier engine.py
 
 
 class AnalysePage(ctk.CTkToplevel):
-    def __init__(self, parent, nom_algo, fonction_tri):
+    def __init__(self, parent, nom_algo, classe_algo):
         super().__init__(parent)
         self.title(f"Analyse Performance - {nom_algo}")
-        self.geometry("600x750")
+        self.geometry("600x850")  # Ajusté pour les listes de 20 éléments
 
-        # On stocke l'algorithme reçu en paramètre
-        self.fonction_tri = fonction_tri
+        # On stocke l'algorithme (la CLASSE) et son nom
+        self.classe_algo = classe_algo
         self.nom_algo = nom_algo
+
+        # On instancie ton moteur de calcul
+        self.runner = engine.BenchmarkRunner()
 
         # --- TITRE DYNAMIQUE ---
         self.label_titre = ctk.CTkLabel(
@@ -21,7 +23,7 @@ class AnalysePage(ctk.CTkToplevel):
         )
         self.label_titre.pack(pady=20)
 
-        # --- ZONE AFFICHAGE (Menu déroulant + Liste) ---
+        # --- ZONE CONFIGURATION ---
         self.frame_config = ctk.CTkFrame(self)
         self.frame_config.pack(pady=10, padx=20, fill="x")
 
@@ -48,7 +50,7 @@ class AnalysePage(ctk.CTkToplevel):
         # --- BOUTON CALCULER ---
         self.btn_run = ctk.CTkButton(
             self,
-            text="LANCER LE TIMER & RAM",
+            text="🚀 LANCER LE BENCHMARK (ENGINE)",
             fg_color="#2A9D8F",
             height=40,
             font=("Arial", 14, "bold"),
@@ -56,76 +58,97 @@ class AnalysePage(ctk.CTkToplevel):
         )
         self.btn_run.pack(pady=20)
 
-        # --- RÉSULTATS BRUTS (STATS) ---
+        # --- RÉSULTATS STATS ---
         self.stats_box = ctk.CTkTextbox(
             self, width=500, height=150, font=("Courier", 13)
         )
         self.stats_box.pack(pady=10)
 
-        # --- ZONE DE SYNTHÈSE (LA PHRASE EXPLICATIVE) ---
-        self.frame_synthese = ctk.CTkFrame(self, fg_color="#333333", corner_radius=15)
+        # --- ZONE DE SYNTHÈSE ET APERÇU (LISIBLE) ---
+        self.frame_synthese = ctk.CTkFrame(
+            self,
+            fg_color="#F0F0F0",
+            corner_radius=15,
+            border_width=2,
+            border_color="#2A9D8F",
+        )
         self.frame_synthese.pack(pady=20, padx=20, fill="both", expand=True)
 
         self.label_synthese_titre = ctk.CTkLabel(
-            self.frame_synthese, text="SYNTHÈSE DU TRI", font=("Arial", 14, "italic")
+            self.frame_synthese,
+            text="💡 SYNTHÈSE & VISUALISATION",
+            font=("Arial", 14, "bold"),
+            text_color="#2A9D8F",
         )
         self.label_synthese_titre.pack(pady=5)
 
         self.text_synthese = ctk.CTkLabel(
             self.frame_synthese,
             text="En attente de calcul...",
-            wraplength=450,
-            font=("Arial", 13),
+            wraplength=480,
+            font=(
+                ("Consolas", 11) if os.name == "nt" else ("Menlo", 11)
+            ),  # Taille légèrement réduite pour 20 éléments
+            text_color="#333333",
+            justify="left",
         )
         self.text_synthese.pack(pady=15, padx=20)
 
     def executer_mesures(self):
         nom_fichier = self.combo_liste.get()
 
-        # 1. Chargement du fichier
-        try:
-            with open(nom_fichier, "r") as f:
-                liste_test = json.load(f)
-        except Exception as e:
-            self.stats_box.insert("0.0", f"Erreur chargement : {e}")
+        if not os.path.exists(nom_fichier):
             return
 
-        # 2. Mesures (RAM + TEMPS)
-        process = psutil.Process(os.getpid())
-        mem_avant = process.memory_info().rss / (1024 * 1024)  # Conversion en MB
-
-        start_time = time.time()
-        self.fonction_tri(liste_test)  # On exécute l'algo
-        end_time = time.time()
-
-        mem_apres = process.memory_info().rss / (1024 * 1024)
-
-        temps_final = end_time - start_time
-        conso_ram = max(0, mem_apres - mem_avant)
-
-        # 3. Affichage des Statistiques
-        self.stats_box.delete("0.0", "end")
-        stats = f"--- RÉSULTATS {self.nom_algo.upper()} ---\n"
-        stats += f"Fichier utilisé : {nom_fichier}\n"
-        stats += f"Taille liste    : {len(liste_test)} éléments\n"
-        stats += f"Temps d'exécution: {temps_final:.6f} sec\n"
-        stats += f"Mémoire utilisée : {conso_ram:.2f} MB\n"
-        self.stats_box.insert("0.0", stats)
-
-        # 4. Génération de la phrase de synthèse (L'intelligence du code)
-        type_liste = "désordonnée" if "_rd" in nom_fichier else "inversée (pire cas)"
-        vitesse = (
-            "ultra-rapide"
-            if temps_final < 0.01
-            else "efficace" if temps_final < 0.5 else "coûteuse en temps"
+        # 1. Charger les données pour l'aperçu AVANT (20 éléments)
+        with open(nom_fichier, "r") as f:
+            donnees_avant = json.load(f)
+        apercu_avant = str(donnees_avant[:20]) + (
+            "..." if len(donnees_avant) > 20 else ""
         )
 
-        phrase = f"L'analyse montre que pour une liste {type_liste} de {len(liste_test)} valeurs, "
-        phrase += f"le {self.nom_algo} s'est révélé {vitesse}. "
+        # 2. Lancer le moteur (Engine)
+        self.runner.lancer(self.classe_algo, nom_fichier)
+        res = self.runner.resultats[-1]
 
-        if conso_ram > 1:
-            phrase += f"\nOn note une consommation RAM de {conso_ram:.2f} MB, ce qui est typique des algos récursifs ou créant des copies."
-        else:
-            phrase += "\nL'impact sur la mémoire vive est négligeable (tri 'in-place')."
+        # 3. Récupérer l'APRÈS directement depuis le moteur (20 éléments)
+        # On utilise le résultat réel de l'algorithme stocké dans le dictionnaire
+        liste_triee_par_algo = res.get("liste_finale", [])
+        apercu_apres = str(liste_triee_par_algo[:20]) + (
+            "..." if len(liste_triee_par_algo) > 20 else ""
+        )
 
-        self.text_synthese.configure(text=phrase)
+        # 4. Affichage Stats
+        self.stats_box.delete("0.0", "end")
+        self.stats_box.insert(
+            "0.0",
+            f"--- RÉSULTATS {self.nom_algo.upper()} ---\n"
+            f"Fichier : {nom_fichier}\n"
+            f"Complexité : {res['complexite']}\n"
+            f"Temps Réel : {res['temps']:.6f} sec\n"
+            f"Mémoire    : {res['ram']:.2f} Ko (Peak)",
+        )
+
+        # 5. Affichage Visuel (Synthèse + Avant/Après)
+        texte_final = f"📥 AVANT (20 premiers) :\n{apercu_avant}\n\n"
+        texte_final += f"📤 APRÈS (20 premiers) :\n{apercu_apres}\n"
+        texte_final += "─" * 45 + "\n"
+        texte_final += self.generer_phrase_synthese(res, nom_fichier)
+
+        self.text_synthese.configure(text=texte_final)
+
+    def generer_phrase_synthese(self, res, fichier):
+        type_liste = "aléatoire" if "_rd" in fichier else "inversée (pire cas)"
+        vitesse = "très efficace" if res["temps"] < 0.05 else "plus exigeant"
+
+        phrase = f"Analyse : Sur cette liste {type_liste}, le tri a été {vitesse}.\n"
+
+        if res.get("ecart") is not None:
+            if res["ecart"] < 20:
+                phrase += f"L'écart de {res['ecart']}% confirme la théorie {res['complexite']}."
+            else:
+                phrase += (
+                    f"Écart théorique de {res['ecart']}% (lié à l'overhead Python)."
+                )
+
+        return phrase

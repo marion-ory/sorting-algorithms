@@ -1,43 +1,39 @@
-import random
 import json
+import random
 
-taille = {"short": 1000, "medium": 20000, "large": 200000, "xlarge": 1000000}
 
+def generer_listes():
+    # Configuration des tailles
+    tailles = {"short": 30, "medium": 100, "large": 1000, "xlarge": 6000}
 
-def generer_liste():
-    #                     [ RANDOM ]
-    short = [random.randint(0, 100) for _ in range(taille["short"])]
+    for nom, taille in tailles.items():
+        # --- GÉNÉRATION DE LA LISTE ALÉATOIRE ---
 
-    medium = [random.randint(0, 2000) for _ in range(taille["medium"])]
+        # On génère d'abord (taille - 2) nombres uniques
+        # L'intervalle est large pour éviter les collisions naturelles
+        liste_rd = random.sample(range(1, 1000000), taille - 2)
 
-    large = [random.randint(0, 200000) for _ in range(taille["large"])]
+        # On choisit deux nombres au hasard dans cette liste pour créer les doublons
+        valeur_doublon1 = random.choice(liste_rd)
+        valeur_doublon2 = random.choice(liste_rd)
 
-    xlarge = [random.randint(0, 1000000) for _ in range(taille["xlarge"])]
+        # On les ajoute à la liste pour atteindre la taille finale
+        liste_rd.append(valeur_doublon1)
+        liste_rd.append(valeur_doublon2)
 
-    #                           [ RANDOM INVERSE ]
+        # On mélange pour que les doublons ne soient pas à la fin
+        random.shuffle(liste_rd)
 
-    short_reverse = sorted(short.copy(), reverse=True)
-    medium_reverse = sorted(medium.copy(), reverse=True)
-    large_reverse = sorted(large.copy(), reverse=True)
-    xlarge_reverse = sorted(xlarge.copy(), reverse=True)
+        # --- GÉNÉRATION DE LA LISTE INVERSÉE (PIRE CAS) ---
+        liste_rv = sorted(liste_rd, reverse=True)
 
-    #                            [SAUVEGARDE JSON ]
+        # Sauvegarde en JSON
+        with open(f"{nom}_rd.json", "w") as f:
+            json.dump(liste_rd, f)
 
-    fichiers = {
-        "short_rd.json": short,
-        "medium_rd.json": medium,
-        "large_rd.json": large,
-        "xlarge_rd.json": xlarge,
-        "short_rv.json": short_reverse,
-        "medium_rv.json": medium_reverse,
-        "large_rv.json": large_reverse,
-        "xlarge_rv.json": xlarge_reverse,
-    }
-
-    for nom_fichier, donnees in fichiers.items():
-        with open(nom_fichier, "w") as f:
-            json.dump(donnees, f)
+        with open(f"{nom}_rv.json", "w") as f:
+            json.dump(liste_rv, f)
 
 
 if __name__ == "__main__":
-    generer_liste()
+    generer_listes()

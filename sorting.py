@@ -217,13 +217,13 @@ class TriTas:
                 self.liste[plus_grand],
                 self.liste[i],
             )
-            self.entasser(n, plus_grand)
+            self.tri_tas(n, plus_grand)
 
     def trier(self):
         N = len(self.liste)
         # construction du tas
         for i in range(N // 2 - 1, -1, -1):
-            self.entasser(N, i)
+            self.tri_tas(N, i)
 
         # rangement dans l'ordre
         for i in range(N - 1, 0, -1):

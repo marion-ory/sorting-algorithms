@@ -1,4 +1,4 @@
-import json
+simport json
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation  # pour mettre à jour le graphique
 import random
