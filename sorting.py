@@ -130,7 +130,7 @@ class TriRapide:
         self.liste = donnees.copy()
         self.nom = "Tri Rapide"
 
-#partitionnement
+    # partitionnement
     def partition(self, debut, fin):
         pivot = self.liste[fin]
         i = debut
@@ -145,17 +145,16 @@ class TriRapide:
         self.liste[fin], self.liste[i] = self.liste[i], self.liste[fin]
         return i
 
-
-#recursion
+    # recursion
     def tri_rapide(self, debut, fin):
         if debut < fin:
             i = self.partition(debut, fin)
-            self.tri_rapide(debut, i-1)
-            self.tri_rapide(i+1, fin)
+            self.tri_rapide(debut, i - 1)
+            self.tri_rapide(i + 1, fin)
 
-#demarrage
+    # demarrage
     def trier(self):
-        self.tri_rapide(0, len(self.liste)-1)
+        self.tri_rapide(0, len(self.liste) - 1)
         return self.liste
 
 
@@ -168,21 +167,23 @@ class TriInsertion:
         self.nom = "Tri par Insertion"
 
     def trier(self):
-        #taille liste
+        # taille liste
         N = len(self.liste)
 
-#tant qu'on n'est pas sorti du tableau (j >= 0)
-#ET que l'élément à gauche est plus grand que la clé
-#on décale cet élément d'une case vers la droite
-        for n in range(1, N):#on parcourt la liste depuis le 2eme element
+        # tant qu'on n'est pas sorti du tableau (j >= 0)
+        # ET que l'élément à gauche est plus grand que la clé
+        # on décale cet élément d'une case vers la droite
+        for n in range(1, N):  # on parcourt la liste depuis le 2eme element
             cle = self.liste[n]
-            j = n - 1#j demarre avant la cle
+            j = n - 1  # j demarre avant la cle
 
-            while j >= 0 and self.liste[j] > cle :
+            while j >= 0 and self.liste[j] > cle:
                 self.liste[j + 1] = self.liste[j]
-                j = j - 1#recule d une position pour continuer la comparaison
+                j = j - 1  # recule d une position pour continuer la comparaison
 
-            self.liste[j + 1] = cle # la boucle s'est arrêtée : on a trouvé la bonne place
+            self.liste[j + 1] = (
+                cle  # la boucle s'est arrêtée : on a trouvé la bonne place
+            )
 
         return self.liste
 
@@ -190,42 +191,42 @@ class TriInsertion:
 # ____________________________________________________________________________________#
 #                         [            TRI PAR TAS       ]
 # ____________________________________________________________________________________#
-class TriTas :
+class TriTas:
     def __init__(self, donnees):
-        #copie pour ne pas utiliser l'original
+        # copie pour ne pas utiliser l'original
         self.liste = donnees.copy()
         self.nom = "Tri par Tas"
 
-
     def tri_tas(self, n, i):
-        #L = liste , #n = taille du tas , #i = indice
-            plus_grand = i #pere donc plus grand
-            gauche = 2 *i+1 #indice fils de gauche
-            droit = 2*i+2 #indice fils de droite
+        # L = liste , #n = taille du tas , #i = indice
+        plus_grand = i  # pere donc plus grand
+        gauche = 2 * i + 1  # indice fils de gauche
+        droit = 2 * i + 2  # indice fils de droite
 
-
-            #fils gauche existe et plus grand ?
+        # fils gauche existe et plus grand ?
         if gauche < n and self.liste[gauche] > self.liste[plus_grand]:
             plus_grand = gauche
 
-            #fils droit existe et plus grand ?
+            # fils droit existe et plus grand ?
         if droit < n and self.liste[droit] > self.liste[plus_grand]:
             plus_grand = droit
 
-
-            #si le plus grand n'est pas i on echange et on descend
+            # si le plus grand n'est pas i on echange et on descend
         if plus_grand != i:
-            self.liste[i], self.liste[plus_grand] = self.liste[plus_grand], self.liste[i]
+            self.liste[i], self.liste[plus_grand] = (
+                self.liste[plus_grand],
+                self.liste[i],
+            )
             self.entasser(n, plus_grand)
 
     def trier(self):
         N = len(self.liste)
-        #construction du tas
-        for i in range (N//2-1, -1, -1):
+        # construction du tas
+        for i in range(N // 2 - 1, -1, -1):
             self.entasser(N, i)
 
-        #rangement dans l'ordre
-        for i in range(N-1, 0, -1):
+        # rangement dans l'ordre
+        for i in range(N - 1, 0, -1):
             self.liste[0], self.liste[i] = self.liste[i], self.liste[0]
             self.tri_tas(i, 0)
 
