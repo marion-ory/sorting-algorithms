@@ -68,7 +68,7 @@ class StableMenu(ctk.CTkToplevel):
         self.result_box.pack(pady=10)
 
     def comparer_algos(self):
-        chemin_fichier = "short_rv.json"
+        chemin_fichier = "json_data/short_rv.json"
 
         if not os.path.exists(chemin_fichier):
             self.result_box.delete("0.0", "end")
