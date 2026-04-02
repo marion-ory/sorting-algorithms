@@ -32,6 +32,7 @@ class InstableMenu(ctk.CTkToplevel):
             text="Lancer Tri Peigne",
             command=lambda: AnalysePage(self, "Tri à Peigne", TriPeigne),
         )
+        self.btn_peigne.pack(pady=10)
 
         # Pour le Tri Rapide
         self.btn_rapide = ctk.CTkButton(
@@ -39,6 +40,7 @@ class InstableMenu(ctk.CTkToplevel):
             text="Lancer Tri Rapide",
             command=lambda: AnalysePage(self, "Tri Rapide", TriRapide),
         )
+        self.btn_rapide.pack(pady=10)
 
         # Pour le Tri par Sélection
         self.btn_selection = ctk.CTkButton(
@@ -46,6 +48,7 @@ class InstableMenu(ctk.CTkToplevel):
             text="Lancer Tri Sélection",
             command=lambda: AnalysePage(self, "Tri par Sélection", TriSelection),
         )
+        self.btn_selection.pack(pady=10)
 
         # Pour le Tri par Tas
         self.btn_tas = ctk.CTkButton(
@@ -53,6 +56,7 @@ class InstableMenu(ctk.CTkToplevel):
             text="Lancer Tri par Tas",
             command=lambda: AnalysePage(self, "Tri par Tas", TriTas),
         )
+        self.btn_tas.pack(pady=10)
 
         # --- SECTION COMPARAISON ---
         self.separator = ctk.CTkFrame(self, height=2, fg_color="gray")
@@ -60,7 +64,7 @@ class InstableMenu(ctk.CTkToplevel):
 
         self.btn_compare = ctk.CTkButton(
             self,
-            text=" COMPARER TOUS LES STABLES",
+            text=" COMPARER TOUS LES INSTABLES",
             fg_color="#2A9D8F",
             hover_color="#21867A",
             command=self.comparer_algos,
@@ -89,7 +93,12 @@ class InstableMenu(ctk.CTkToplevel):
         resultats += "-" * 55 + "\n"
 
         # On utilise les noms exacts de tes imports depuis sorting.py
-        algos = {"Bulle": TriBulle, "Insertion": TriInsertion, "Fusion": TriFusion}
+        algos = {
+            "Peigne": TriPeigne,
+            "Rapide": TriRapide,
+            "Selection": TriSelection,
+            "Tas": TriTas,
+        }
         process = psutil.Process(os.getpid())
 
         for nom, fonction in algos.items():
