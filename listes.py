@@ -28,10 +28,10 @@ def generer_listes():
         liste_rv = sorted(liste_rd, reverse=True)
 
         # Sauvegarde en JSON
-        with open(f"{nom}_rd.json", "w") as f:
+        with open(f"json_data/{nom}_rd.json", "w") as f:
             json.dump(liste_rd, f)
 
-        with open(f"{nom}_rv.json", "w") as f:
+        with open("json_data/{nom}_rd.json") as f:
             json.dump(liste_rv, f)
 
 

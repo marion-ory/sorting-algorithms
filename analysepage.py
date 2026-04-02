@@ -2,13 +2,15 @@ import customtkinter as ctk
 import os
 import json
 import engine  # Importation de ton fichier engine.py
+import subprocess
+import sys
 
 
 class AnalysePage(ctk.CTkToplevel):
     def __init__(self, parent, nom_algo, classe_algo):
         super().__init__(parent)
         self.title(f"Analyse Performance - {nom_algo}")
-        self.geometry("600x850")  # Ajusté pour les listes de 20 éléments
+        self.geometry("600x900")  # Hauteur ajustée pour le nouveau bouton
 
         # On stocke l'algorithme (la CLASSE) et son nom
         self.classe_algo = classe_algo
@@ -32,31 +34,46 @@ class AnalysePage(ctk.CTkToplevel):
         )
 
         self.options_listes = [
-            "short_rd.json",
-            "short_rv.json",
-            "medium_rd.json",
-            "medium_rv.json",
-            "large_rd.json",
-            "large_rv.json",
-            "xlarge_rd.json",
-            "xlarge_rv.json",
+            "json_data/short_rd.json",
+            "json_data/short_rv.json",
+            "json_data/medium_rd.json",
+            "json_data/medium_rv.json",
+            "json_data/large_rd.json",
+            "json_data/large_rv.json",
+            "json_data/xlarge_rd.json",
+            "json_data/xlarge_rv.json",
         ]
         self.combo_liste = ctk.CTkComboBox(
             self.frame_config, values=self.options_listes, width=300
         )
         self.combo_liste.pack(pady=10)
-        self.combo_liste.set("short_rd.json")
+        self.combo_liste.set("json_data/short_rd.json")
 
-        # --- BOUTON CALCULER ---
+        # --- BOUTONS D'ACTION ---
+        self.frame_buttons = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_buttons.pack(pady=10)
+
+        # Bouton Benchmark
         self.btn_run = ctk.CTkButton(
-            self,
-            text="🚀 LANCER LE BENCHMARK (ENGINE)",
+            self.frame_buttons,
+            text="LANCER LE BENCHMARK",
             fg_color="#2A9D8F",
             height=40,
             font=("Arial", 14, "bold"),
             command=self.executer_mesures,
         )
-        self.btn_run.pack(pady=20)
+        self.btn_run.pack(side="left", padx=10)
+
+        # Bouton Graphique (Nouveau)
+        self.btn_graph = ctk.CTkButton(
+            self.frame_buttons,
+            text="GRAPHIQUE ",
+            fg_color="#E76F51",  # Couleur corail pour le différencier
+            height=40,
+            font=("Arial", 14, "bold"),
+            command=self.ouvrir_graphique,
+        )
+        self.btn_graph.pack(side="left", padx=10)
 
         # --- RÉSULTATS STATS ---
         self.stats_box = ctk.CTkTextbox(
@@ -86,9 +103,7 @@ class AnalysePage(ctk.CTkToplevel):
             self.frame_synthese,
             text="En attente de calcul...",
             wraplength=480,
-            font=(
-                ("Consolas", 11) if os.name == "nt" else ("Menlo", 11)
-            ),  # Taille légèrement réduite pour 20 éléments
+            font=(("Consolas", 11) if os.name == "nt" else ("Menlo", 11)),
             text_color="#333333",
             justify="left",
         )
@@ -100,25 +115,20 @@ class AnalysePage(ctk.CTkToplevel):
         if not os.path.exists(nom_fichier):
             return
 
-        # 1. Charger les données pour l'aperçu AVANT (20 éléments)
         with open(nom_fichier, "r") as f:
             donnees_avant = json.load(f)
         apercu_avant = str(donnees_avant[:20]) + (
             "..." if len(donnees_avant) > 20 else ""
         )
 
-        # 2. Lancer le moteur (Engine)
         self.runner.lancer(self.classe_algo, nom_fichier)
         res = self.runner.resultats[-1]
 
-        # 3. Récupérer l'APRÈS directement depuis le moteur (20 éléments)
-        # On utilise le résultat réel de l'algorithme stocké dans le dictionnaire
         liste_triee_par_algo = res.get("liste_finale", [])
         apercu_apres = str(liste_triee_par_algo[:20]) + (
             "..." if len(liste_triee_par_algo) > 20 else ""
         )
 
-        # 4. Affichage Stats
         self.stats_box.delete("0.0", "end")
         self.stats_box.insert(
             "0.0",
@@ -129,13 +139,26 @@ class AnalysePage(ctk.CTkToplevel):
             f"Mémoire    : {res['ram']:.2f} Ko (Peak)",
         )
 
-        # 5. Affichage Visuel (Synthèse + Avant/Après)
         texte_final = f"📥 AVANT (20 premiers) :\n{apercu_avant}\n\n"
         texte_final += f"📤 APRÈS (20 premiers) :\n{apercu_apres}\n"
         texte_final += "─" * 45 + "\n"
         texte_final += self.generer_phrase_synthese(res, nom_fichier)
 
         self.text_synthese.configure(text=texte_final)
+
+    def ouvrir_graphique(self):
+        """Lance le script graphique correspondant à l'algorithme actuel."""
+        # On construit le nom : graphic_ + nom de la classe (ex: graphic_TriBulle.py)
+        nom_script = f"graphic_{self.classe_algo.__name__}.py"
+
+        if os.path.exists(nom_script):
+            # subprocess.Popen lance le graphique sans bloquer l'interface principale
+            subprocess.Popen([sys.executable, nom_script])
+        else:
+            self.stats_box.delete("0.0", "end")
+            self.stats_box.insert(
+                "0.0", f"⚠️ ERREUR : Fichier '{nom_script}' introuvable."
+            )
 
     def generer_phrase_synthese(self, res, fichier):
         type_liste = "aléatoire" if "_rd" in fichier else "inversée (pire cas)"

@@ -44,23 +44,6 @@ class App(ctk.CTk):
         )
         self.btn_instable.pack(pady=15)
 
-        # Bouton VISUALISATION (Lien direct vers ton graphic.py)
-        self.btn_visu = ctk.CTkButton(
-            self.button_frame,
-            text="VISUALISATION GRAPHIQUE",
-            width=250,
-            height=60,
-            font=("Arial", 18),
-            fg_color="#7B2CBF",
-            hover_color="#5A189A",
-            command=self.lancer_graphic_py,
-        )
-        self.btn_visu.pack(pady=15)
-
-    def lancer_graphic_py(self):
-        # Lance ton script de visualisation circulaire
-        subprocess.Popen(["python3", "graphic.py"])
-
     def ouvrir_menu_stable(self):
         print("Ouverture du menu des Tris Stables...")
         # Ici tu créeras une nouvelle fenêtre ou tu changeras le contenu de celle-ci

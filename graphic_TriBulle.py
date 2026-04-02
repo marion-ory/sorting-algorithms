@@ -1,8 +1,10 @@
-simport json
+import json
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation  # pour mettre à jour le graphique
 import random
 import numpy
+import matplotlib.cm as cm  # AJOUTÉ pour la ColorMap
+import matplotlib.colors as mcolors  # AJOUTÉ pour la Normalisation de la légende
 
 # _______________________________________________________________#
 #       [   CHARGEMENT DES DONNEES (LISTES JSON )   ]
@@ -15,7 +17,7 @@ def charger_donnees(nom_fichier):
     return data[:30]  # retourne les 30 premieres valeurs que ce soit lisible
 
 
-nom_fichier = "short_rd.json"
+nom_fichier = "json_data/short_rd.json"
 ma_liste = charger_donnees(nom_fichier)
 n = len(ma_liste)
 
@@ -64,31 +66,32 @@ def tribulle(arr):
 
 
 # _______________________________________________________________#
-#         [         ALGORITHME TRI SELECTION      ]
-# _______________________________________________________________#
-
-
-def selection_sort(arr):
-    n = len(arr)
-    for i in range(n):
-        min_idx = i
-        for j in range(i + 1, n):  # i+1, pas i+i
-            if arr[j] < arr[min_idx]:
-                min_idx = j
-        arr[i], arr[min_idx] = arr[min_idx], arr[i]
-        yield arr
-
-
-# _______________________________________________________________#
 #         [         ANIMATION GRAPHIQUE CIRCULAIRE     ]
 # _______________________________________________________________#
 # cree le cerlce et cache les axes
 
-fig, ax = plt.subplots(figsize=(8, 8))
+fig, ax = plt.subplots(figsize=(9, 8))  # Ajusté pour faire de la place à la légende
 ax.axis("off")
 
 # on cree les part toute =1 / patches = ce qu on colorie
 patches, _ = ax.pie([1] * n, startangle=90)
+
+
+# _______________________________________________________________#
+#         [         AJOUT DE LA LÉGENDE COLORBAR     ]
+# _______________________________________________________________#
+# Création de l'objet de normalisation pour la légende
+norm = mcolors.Normalize(vmin=mini, vmax=maxi)
+# Création de la barre de couleur 'plasma' liée à la normalisation
+sm = cm.ScalarMappable(cmap=plt.cm.plasma, norm=norm)
+sm.set_array([])  # Nécessaire pour Matplotlib
+# Positionnement de la Colorbar à droite du graphique
+cbar = fig.colorbar(sm, ax=ax, fraction=0.046, pad=0.04)
+# Label de l'axe de la légende pour expliquer le dégradé
+cbar.set_label(
+    "PetitNombre ← Échelle de Couleur → GrandNombre", rotation=270, labelpad=15
+)
+
 
 # on colori avec liste melangé
 for i, patch in enumerate(patches):
@@ -111,11 +114,11 @@ ani = animation.FuncAnimation(
     update,  # change les part en couleur
     frames=generateur,  # chaque etape que le yield va nous donner
     fargs=(patches,),
-    interval=50,  # Vitesse : 50ms entre chaque image (baisse pour accélérer)
+    interval=100,  # Vitesse : 100ms pour que ce soit plus lisible avec la légende
     repeat=False,
     blit=True,  # optimisation change juste la couleur des part
     cache_frame_data=False,
 )
 
-plt.title(f"Visualisation en direct du Tri sur {nom_fichier}")
+plt.title(f"Visualisation en direct du Tri Bulle sur {nom_fichier}\n")
 plt.show()
