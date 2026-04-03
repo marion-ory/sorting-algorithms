@@ -77,7 +77,7 @@ class InstableMenu(ctk.CTkToplevel):
         # --- BOUTON COMPARAISON ---
         self.btn_compare_instables = ctk.CTkButton(
             self,
-            text="📊 COMPARER LES 4 INSTABLES",
+            text="COMPARER LES 4 INSTABLES",
             fg_color="#E76F51",  # Couleur corail pour les instables
             hover_color="#A34D37",
             height=50,

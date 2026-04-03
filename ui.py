@@ -49,7 +49,7 @@ class App(ctk.CTk):
         # --- BOUTON COMPARAISON COMPLEXITE ---
         self.btn_compare_tous = ctk.CTkButton(
             self,
-            text="COURBES DE COMPLEXITÉ",
+            text="DASHBOARD COMPARATIF DES ALGORITHMES DE TRI",
             fg_color="#E76F51",
             hover_color="#A34D37",
             width=350,
@@ -58,19 +58,6 @@ class App(ctk.CTk):
             command=self.ouvrir_menu_comparaison_tous,
         )
         self.btn_compare_tous.pack(pady=30)
-
-        # --- BOUTON COMPARAISON RAM---
-        self.btn_compare_ram = ctk.CTkButton(
-            self,
-            text="ANALYSE RAM",
-            fg_color="#E76F51",
-            hover_color="#A34D37",
-            width=350,
-            height=60,
-            font=("Arial", 14, "bold"),
-            command=self.ouvrir_menu_ram,
-        )
-        self.btn_compare_ram.pack(pady=30)
 
     def ouvrir_menu_stable(self):
         self.nouvelle_fenetre = StableMenu(self)
