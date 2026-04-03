@@ -10,7 +10,7 @@ def generer_listes():
         print("📁 Dossier 'json_data' créé.")
 
     # Configuration des tailles
-    tailles = {"short": 30, "medium": 1000, "large": 10000, "xlarge": 50000}
+    tailles = {"short": 30, "medium": 1000, "large": 5000, "xlarge": 6000}
 
     for nom, taille in tailles.items():
         # --- GÉNÉRATION DE LA LISTE ALÉATOIRE ---

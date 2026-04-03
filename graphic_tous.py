@@ -44,10 +44,10 @@ class GraphicTous:
     def generer_dashboard_complet(self):
         # ... (Configuration des tests identique à ton code précédent) ...
         tests = [
-            {"n": 100, "path": "json_data/short_rd.json"},
-            {"n": 500, "path": "json_data/medium_rd.json"},
-            {"n": 2000, "path": "json_data/large_rd.json"},
-            {"n": 5000, "path": "json_data/xlarge_rd.json"},
+            {"n": 30, "path": "json_data/short_rd.json"},
+            {"n": 100, "path": "json_data/medium_rd.json"},
+            {"n": 5000, "path": "json_data/large_rd.json"},
+            {"n": 6000, "path": "json_data/xlarge_rd.json"},
         ]
 
         algos = {
