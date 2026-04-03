@@ -1,10 +1,8 @@
 import json
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation  # pour mettre à jour le graphique
-import random
-import numpy
-import matplotlib.cm as cm  # AJOUTÉ pour la ColorMap
-import matplotlib.colors as mcolors  # AJOUTÉ pour la Normalisation de la légende
+import matplotlib.animation as animation
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 # _______________________________________________________________#
 #       [   CHARGEMENT DES DONNEES (LISTES JSON )   ]
@@ -12,28 +10,23 @@ import matplotlib.colors as mcolors  # AJOUTÉ pour la Normalisation de la lége
 
 
 def charger_donnees(nom_fichier):
-    with open(nom_fichier, "r") as f:  # on ouvre on lit le fichier
-        data = json.load(f)  # on charge
-    return data[:30]  # retourne les 30 premieres valeurs que ce soit lisible
+    with open(nom_fichier, "r") as f:
+        data = json.load(f)
+    return data[:30]  # Garde 30 pour la lisibilité
 
 
 nom_fichier = "json_data/short_rd.json"
 ma_liste = charger_donnees(nom_fichier)
 n = len(ma_liste)
 
-
 # _______________________________________________________________#
 #         [         ATTRIBUTION COULEURS         ]
 # _______________________________________________________________#
 
-mini, maxi = min(ma_liste), max(
-    ma_liste
-)  # crée une echelle de couleur adapter sur le min et max de ma liste
+mini, maxi = min(ma_liste), max(ma_liste)
 
-
-# 1 - Transforme n importe quel nombre de ma liste en chiffre entre 0 et 1
-# 2-on retire le plus petit nombre possible (mini), et on divise par l'écart total (maxi - mini)
-# 3 securité si les nb de ma liste sont tous egaux alors = 0 si norm =1 ->couleur tout a droite si = 0,5 milieu
+# Utilisation de la Colormap 'magma' ou 'plasma' (très néon sur fond noir)
+COLOR_MAP = plt.cm.plasma
 
 
 def obtenir_couleur(valeur):
@@ -41,63 +34,61 @@ def obtenir_couleur(valeur):
         normalisation = (valeur - mini) / (maxi - mini)
     else:
         normalisation = 0
-    return plt.cm.plasma(normalisation)
-
-
-# plt.cm = Color Map
-# plama= palette de couleur fonctionne avec des chiffre 0 = debut de palette 1 = fin
+    return COLOR_MAP(normalisation)
 
 
 # _______________________________________________________________#
 #         [         ALGORITHME TRI BULLE        ]
 # _______________________________________________________________#
-# utilise YIELD au lieu de return pour mettre en pause l algo a chq echange pour mettre a jour le graph en tant reel
 
 
 def tribulle(arr):
-    n = len(arr)  # longueur de liste
+    n = len(arr)
     for i in range(n):
-        for j in range(0, n - i - 1):  # enleve le passage
-            if (
-                arr[j] > arr[j + 1]
-            ):  # le premier element est plus grand que le deuxiemene
-                arr[j], arr[j + 1] = arr[j + 1], arr[j]  # on switch
-                yield arr
+        for j in range(0, n - i - 1):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+                yield list(arr)  # On yield une copie pour éviter les bugs d'index
 
 
 # _______________________________________________________________#
-#         [         ANIMATION GRAPHIQUE CIRCULAIRE     ]
+#         [         ANIMATION ET STYLE DASHBOARD     ]
 # _______________________________________________________________#
-# cree le cerlce et cache les axes
 
-fig, ax = plt.subplots(figsize=(9, 8))  # Ajusté pour faire de la place à la légende
+# Configuration du style sombre global
+plt.rcParams["text.color"] = "#58A6FF"  # Bleu clair dashboard
+plt.rcParams["axes.labelcolor"] = "#8B949E"
+
+fig, ax = plt.subplots(figsize=(10, 8), facecolor="#0D1117")  # Fond GitHub Dark
+ax.set_facecolor("#0D1117")
 ax.axis("off")
 
-# on cree les part toute =1 / patches = ce qu on colorie
-patches, _ = ax.pie([1] * n, startangle=90)
-
-
-# _______________________________________________________________#
-#         [         AJOUT DE LA LÉGENDE COLORBAR     ]
-# _______________________________________________________________#
-# Création de l'objet de normalisation pour la légende
-norm = mcolors.Normalize(vmin=mini, vmax=maxi)
-# Création de la barre de couleur 'plasma' liée à la normalisation
-sm = cm.ScalarMappable(cmap=plt.cm.plasma, norm=norm)
-sm.set_array([])  # Nécessaire pour Matplotlib
-# Positionnement de la Colorbar à droite du graphique
-cbar = fig.colorbar(sm, ax=ax, fraction=0.046, pad=0.04)
-# Label de l'axe de la légende pour expliquer le dégradé
-cbar.set_label(
-    "PetitNombre ← Échelle de Couleur → GrandNombre", rotation=270, labelpad=15
+# Création du camembert (Pie Chart) avec des bordures fines pour séparer les éléments
+# wedgeprops={'edgecolor': '#0D1117', 'linewidth': 1} crée l'effet de séparation propre
+patches, _ = ax.pie(
+    [1] * n, startangle=90, wedgeprops={"edgecolor": "#0D1117", "linewidth": 1.5}
 )
 
+# _______________________________________________________________#
+#         [         COLORBAR STYLISÉE         ]
+# _______________________________________________________________#
 
-# on colori avec liste melangé
+norm = mcolors.Normalize(vmin=mini, vmax=maxi)
+sm = cm.ScalarMappable(cmap=COLOR_MAP, norm=norm)
+sm.set_array([])
+
+# On ajoute la barre de couleur
+cbar = fig.colorbar(sm, ax=ax, fraction=0.03, pad=0.08)
+cbar.outline.set_edgecolor("#30363D")  # Bordure de la légende discrète
+cbar.ax.yaxis.set_tick_params(color="#8B949E", labelcolor="#8B949E")  # Ticks grisés
+
+cbar.set_label(
+    "VALEURS : MIN → MAX", color="#58A6FF", fontsize=10, fontweight="bold", labelpad=20
+)
+
+# Initialisation des couleurs
 for i, patch in enumerate(patches):
     patch.set_facecolor(obtenir_couleur(ma_liste[i]))
-
-# ---> recoit la liste a chq etape du tri et change les couleurs
 
 
 def update(liste_etape, patches):
@@ -107,18 +98,27 @@ def update(liste_etape, patches):
     return patches
 
 
-generateur = tribulle(ma_liste)  # generateur contient la liste etape par etape
+generateur = tribulle(ma_liste)
 
 ani = animation.FuncAnimation(
-    fig,  # = fenetre
-    update,  # change les part en couleur
-    frames=generateur,  # chaque etape que le yield va nous donner
+    fig,
+    update,
+    frames=generateur,
     fargs=(patches,),
-    interval=100,  # Vitesse : 100ms pour que ce soit plus lisible avec la légende
+    interval=50,  # Plus rapide pour un effet "monitoring" dynamique
     repeat=False,
-    blit=True,  # optimisation change juste la couleur des part
+    blit=True,
     cache_frame_data=False,
 )
 
-plt.title(f"Visualisation en direct du Tri Bulle sur {nom_fichier}\n")
+plt.title(
+    f"MONITORING FLUX : {nom_algo.upper() if 'nom_algo' in locals() else 'TRI BULLE'}",
+    color="#58A6FF",
+    fontsize=16,
+    fontweight="bold",
+    pad=20,
+)
+
+# Ajustement pour que rien ne soit coupé
+plt.tight_layout()
 plt.show()

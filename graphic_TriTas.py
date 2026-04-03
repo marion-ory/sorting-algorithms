@@ -1,10 +1,8 @@
 import json
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation  # pour mettre à jour le graphique
-import random
-import numpy
-import matplotlib.cm as cm  # AJOUTÉ pour la ColorMap
-import matplotlib.colors as mcolors  # AJOUTÉ pour la Normalisation de la légende
+import matplotlib.animation as animation
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 # _______________________________________________________________#
 #       [   CHARGEMENT DES DONNEES (LISTES JSON )   ]
@@ -12,28 +10,21 @@ import matplotlib.colors as mcolors  # AJOUTÉ pour la Normalisation de la lége
 
 
 def charger_donnees(nom_fichier):
-    with open(nom_fichier, "r") as f:  # on ouvre on lit le fichier
-        data = json.load(f)  # on charge
-    return data[:30]  # retourne les 30 premieres valeurs que ce soit lisible
+    with open(nom_fichier, "r") as f:
+        data = json.load(f)
+    return data[:30]  # Garde 30 pour la lisibilité sur le cercle
 
 
 nom_fichier = "json_data/short_rd.json"
 ma_liste = charger_donnees(nom_fichier)
 n = len(ma_liste)
 
-
 # _______________________________________________________________#
 #         [         ATTRIBUTION COULEURS         ]
 # _______________________________________________________________#
 
-mini, maxi = min(ma_liste), max(
-    ma_liste
-)  # crée une echelle de couleur adapter sur le min et max de ma liste
-
-
-# 1 - Transforme n importe quel nombre de ma liste en chiffre entre 0 et 1
-# 2-on retire le plus petit nombre possible (mini), et on divise par l'écart total (maxi - mini)
-# 3 securité si les nb de ma liste sont tous egaux alors = 0 si norm =1 ->couleur tout a droite si = 0,5 milieu
+mini, maxi = min(ma_liste), max(ma_liste)
+COLOR_MAP = plt.cm.plasma
 
 
 def obtenir_couleur(valeur):
@@ -41,124 +32,113 @@ def obtenir_couleur(valeur):
         normalisation = (valeur - mini) / (maxi - mini)
     else:
         normalisation = 0
-    return plt.cm.plasma(normalisation)
-
-
-# plt.cm = Color Map
-# plama= palette de couleur fonctionne avec des chiffre 0 = debut de palette 1 = fin
+    return COLOR_MAP(normalisation)
 
 
 # _______________________________________________________________#
-#         [         ALGORITHME TRI RAPIDE  ]
+#         [         ALGORITHME TRI TAS ANIME          ]
 # _______________________________________________________________#
-# utilise YIELD au lieu de return pour mettre en pause l algo a chq echange pour mettre a jour le graph en tant reel
 
 
 def tri_tas_anime(arr):
     n = len(arr)
-    # On travaille sur une copie pour l'animation
-    liste_anim = list(arr)
+    A = list(arr)
 
-    def entasser(n, i):
-        plus_grand = i  # On initialise le plus grand comme la racine
-        gauche = 2 * i + 1
-        droite = 2 * i + 2
+    def entasser(nb_entasser, k):
+        """Maintient la propriété de tas max à l'index k dans un tas de taille nb_entasser."""
+        max_idx = k
+        gauche = 2 * k + 1
+        droite = 2 * k + 2
 
-        # Si le fils gauche est plus grand que la racine
-        if gauche < n and liste_anim[gauche] > liste_anim[plus_grand]:
-            plus_grand = gauche
+        if gauche < nb_entasser and A[gauche] > A[max_idx]:
+            max_idx = gauche
+        if droite < nb_entasser and A[droite] > A[max_idx]:
+            max_idx = droite
 
-        # Si le fils droit est plus grand que le plus grand actuel
-        if droite < n and liste_anim[droite] > liste_anim[plus_grand]:
-            plus_grand = droite
+        if max_idx != k:
+            A[k], A[max_idx] = A[max_idx], A[k]
+            # ON YIELD : L'élément descend dans l'arbre visible sur le cercle
+            yield list(A)
+            # Récursion
+            yield from entasser(nb_entasser, max_idx)
 
-        # Si le plus grand n'est pas la racine
-        if plus_grand != i:
-            liste_anim[i], liste_anim[plus_grand] = (
-                liste_anim[plus_grand],
-                liste_anim[i],
-            )
-            # ON YIELD : On voit l'élément descendre dans l'arbre
-            yield list(liste_anim)
-
-            # On continue d'entasser récursivement
-            yield from entasser(n, plus_grand)
-
-    # 1. Construire le tas (max heap)
+    # 1. Phase d'entassement (Build Max Heap)
+    print("🧠 Construction du tas invisible...")
     for i in range(n // 2 - 1, -1, -1):
         yield from entasser(n, i)
 
-    # 2. Extraire les éléments un par un
+    # 2. Phase d'extraction (Sort)
+    print("🏆 Phase d'extraction et de placement final...")
     for i in range(n - 1, 0, -1):
-        # On déplace la racine actuelle à la fin
-        liste_anim[i], liste_anim[0] = liste_anim[0], liste_anim[i]
-        # ON YIELD : On voit l'élément le plus grand se placer à la fin
-        yield list(liste_anim)
-
-        # On appelle entasser sur le tas réduit
+        # On déplace la racine actuelle (le max) à la fin
+        A[0], A[i] = A[i], A[0]
+        # ON YIELD : Le max se place à sa position définitive
+        yield list(A)
+        # On refait le tas sur la partie réduite
         yield from entasser(i, 0)
 
 
 # _______________________________________________________________#
-#   DANS TON FICHIER graphic_TriTas.py, UTILISE :
+#         [         STYLE DASHBOARD & ANIMATION     ]
 # _______________________________________________________________#
 
-generateur = tri_tas_anime(ma_liste)
+# Setup du style sombre pour matcher l'AnalysePage
+plt.rcParams["text.color"] = "#58A6FF"
+plt.rcParams["axes.labelcolor"] = "#8B949E"
 
-# _______________________________________________________________#
-#         [         ANIMATION GRAPHIQUE CIRCULAIRE     ]
-# _______________________________________________________________#
-# cree le cerlce et cache les axes
-
-fig, ax = plt.subplots(figsize=(9, 8))  # Ajusté pour faire de la place à la légende
+fig, ax = plt.subplots(figsize=(10, 8), facecolor="#0D1117")
+ax.set_facecolor("#0D1117")
 ax.axis("off")
 
-# on cree les part toute =1 / patches = ce qu on colorie
-patches, _ = ax.pie([1] * n, startangle=90)
-
-
-# _______________________________________________________________#
-#         [         AJOUT DE LA LÉGENDE COLORBAR     ]
-# _______________________________________________________________#
-# Création de l'objet de normalisation pour la légende
-norm = mcolors.Normalize(vmin=mini, vmax=maxi)
-# Création de la barre de couleur 'plasma' liée à la normalisation
-sm = cm.ScalarMappable(cmap=plt.cm.plasma, norm=norm)
-sm.set_array([])  # Nécessaire pour Matplotlib
-# Positionnement de la Colorbar à droite du graphique
-cbar = fig.colorbar(sm, ax=ax, fraction=0.046, pad=0.04)
-# Label de l'axe de la légende pour expliquer le dégradé
-cbar.set_label(
-    "PetitNombre ← Échelle de Couleur → GrandNombre", rotation=270, labelpad=15
+# Création du Pie Chart avec les séparateurs sombres
+# wedprops linewidth=1.5 donne un look néon/technique
+patches, _ = ax.pie(
+    [1] * n, startangle=90, wedgeprops={"edgecolor": "#0D1117", "linewidth": 1.5}
 )
 
+# --- COLORBAR STYLISÉE ---
+norm = mcolors.Normalize(vmin=mini, vmax=maxi)
+sm = cm.ScalarMappable(cmap=COLOR_MAP, norm=norm)
+sm.set_array([])
 
-# on colori avec liste melangé
+cbar = fig.colorbar(sm, ax=ax, fraction=0.03, pad=0.08)
+cbar.outline.set_edgecolor("#30363D")
+cbar.ax.yaxis.set_tick_params(color="#8B949E", labelcolor="#8B949E")
+cbar.set_label(
+    "VALEURS : MIN → MAX", color="#58A6FF", fontsize=10, fontweight="bold", labelpad=20
+)
+
+# Initialisation des couleurs (liste mélangée)
 for i, patch in enumerate(patches):
     patch.set_facecolor(obtenir_couleur(ma_liste[i]))
-
-# ---> recoit la liste a chq etape du tri et change les couleurs
 
 
 def update(liste_etape, patches):
     for i, patch in enumerate(patches):
-        valeur = liste_etape[i]
-        patch.set_facecolor(obtenir_couleur(valeur))
+        patch.set_facecolor(obtenir_couleur(liste_etape[i]))
     return patches
 
 
-generateur = tri_tas_anime(ma_liste)  # generateur contient la liste etape par etape
+generateur = tri_tas_anime(ma_liste)
 
 ani = animation.FuncAnimation(
-    fig,  # = fenetre
-    update,  # change les part en couleur
-    frames=generateur,  # chaque etape que le yield va nous donner
+    fig,
+    update,
+    frames=generateur,
     fargs=(patches,),
-    interval=100,  # Vitesse : 100ms pour que ce soit plus lisible avec la légende
+    interval=100,  # Vitesse modérée car il y a beaucoup de micro-étapes
     repeat=False,
-    blit=True,  # optimisation change juste la couleur des part
+    blit=True,
     cache_frame_data=False,
 )
 
-plt.title(f"Visualisation en direct du Tri par Tas sur {nom_fichier}\n")
+plt.title(
+    f"MONITORING FLUX : TRI PAR TAS (HEAP SORT)",
+    color="#58A6FF",
+    fontsize=16,
+    fontweight="bold",
+    pad=20,
+)
+
+plt.tight_layout()
 plt.show()

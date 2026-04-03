@@ -82,7 +82,7 @@ class App(ctk.CTk):
         # On le détache visuellement car c'est la fonction "Premium"
         self.btn_compare_tous = ctk.CTkButton(
             self,
-            text=" DASHBOARD COMPARATIF GLOBAL",
+            text="🚀 DASHBOARD COMPARATIF GLOBAL",
             fg_color="#E76F51",  # Orange corail
             hover_color="#A34D37",
             width=400,

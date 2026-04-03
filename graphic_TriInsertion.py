@@ -1,10 +1,8 @@
 import json
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation  # pour mettre à jour le graphique
-import random
-import numpy
-import matplotlib.cm as cm  # AJOUTÉ pour la ColorMap
-import matplotlib.colors as mcolors  # AJOUTÉ pour la Normalisation de la légende
+import matplotlib.animation as animation
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 # _______________________________________________________________#
 #       [   CHARGEMENT DES DONNEES (LISTES JSON )   ]
@@ -12,28 +10,21 @@ import matplotlib.colors as mcolors  # AJOUTÉ pour la Normalisation de la lége
 
 
 def charger_donnees(nom_fichier):
-    with open(nom_fichier, "r") as f:  # on ouvre on lit le fichier
-        data = json.load(f)  # on charge
-    return data[:30]  # retourne les 30 premieres valeurs que ce soit lisible
+    with open(nom_fichier, "r") as f:
+        data = json.load(f)
+    return data[:30]
 
 
 nom_fichier = "json_data/short_rd.json"
 ma_liste = charger_donnees(nom_fichier)
 n = len(ma_liste)
 
-
 # _______________________________________________________________#
 #         [         ATTRIBUTION COULEURS         ]
 # _______________________________________________________________#
 
-mini, maxi = min(ma_liste), max(
-    ma_liste
-)  # crée une echelle de couleur adapter sur le min et max de ma liste
-
-
-# 1 - Transforme n importe quel nombre de ma liste en chiffre entre 0 et 1
-# 2-on retire le plus petit nombre possible (mini), et on divise par l'écart total (maxi - mini)
-# 3 securité si les nb de ma liste sont tous egaux alors = 0 si norm =1 ->couleur tout a droite si = 0,5 milieu
+mini, maxi = min(ma_liste), max(ma_liste)
+COLOR_MAP = plt.cm.plasma
 
 
 def obtenir_couleur(valeur):
@@ -41,97 +32,91 @@ def obtenir_couleur(valeur):
         normalisation = (valeur - mini) / (maxi - mini)
     else:
         normalisation = 0
-    return plt.cm.plasma(normalisation)
-
-
-# plt.cm = Color Map
-# plama= palette de couleur fonctionne avec des chiffre 0 = debut de palette 1 = fin
+    return COLOR_MAP(normalisation)
 
 
 # _______________________________________________________________#
 #         [         ALGORITHME TRI INSERTION      ]
 # _______________________________________________________________#
-# utilise YIELD au lieu de return pour mettre en pause l algo a chq echange pour mettre a jour le graph en tant reel
 
 
 def tri_insertion_anime(arr):
     N = len(arr)
-    # On travaille sur une copie pour l'animation
     liste_anim = list(arr)
-
-    for n in range(1, N):
-        cle = liste_anim[n]
-        j = n - 1
-
+    for n_idx in range(1, N):
+        cle = liste_anim[n_idx]
+        j = n_idx - 1
         while j >= 0 and liste_anim[j] > cle:
             liste_anim[j + 1] = liste_anim[j]
             j = j - 1
-            # OPTIONNEL : On peut yield ici pour voir le décalage
-            # élément par élément, mais ça peut être très lent.
-            # yield liste_anim
-
+            # On yield ici pour voir le "glissement" de l'élément
+            yield list(liste_anim)
         liste_anim[j + 1] = cle
-        # INDISPENSABLE : On yield ici une fois que la clé est insérée
-        # C'est l'étape visuelle la plus importante
-        yield liste_anim
+        yield list(liste_anim)
 
 
 # _______________________________________________________________#
-#         [         ANIMATION GRAPHIQUE CIRCULAIRE     ]
+#         [         STYLE DASHBOARD DARK          ]
 # _______________________________________________________________#
-# cree le cerlce et cache les axes
 
-fig, ax = plt.subplots(figsize=(9, 8))  # Ajusté pour faire de la place à la légende
+# Configuration des couleurs globales
+plt.rcParams["text.color"] = "#58A6FF"
+plt.rcParams["axes.labelcolor"] = "#8B949E"
+
+# Création de la figure avec le fond GitHub Dark
+fig, ax = plt.subplots(figsize=(10, 8), facecolor="#0D1117")
+ax.set_facecolor("#0D1117")
 ax.axis("off")
 
-# on cree les part toute =1 / patches = ce qu on colorie
-patches, _ = ax.pie([1] * n, startangle=90)
-
-
-# _______________________________________________________________#
-#         [         AJOUT DE LA LÉGENDE COLORBAR     ]
-# _______________________________________________________________#
-# Création de l'objet de normalisation pour la légende
-norm = mcolors.Normalize(vmin=mini, vmax=maxi)
-# Création de la barre de couleur 'plasma' liée à la normalisation
-sm = cm.ScalarMappable(cmap=plt.cm.plasma, norm=norm)
-sm.set_array([])  # Nécessaire pour Matplotlib
-# Positionnement de la Colorbar à droite du graphique
-cbar = fig.colorbar(sm, ax=ax, fraction=0.046, pad=0.04)
-# Label de l'axe de la légende pour expliquer le dégradé
-cbar.set_label(
-    "PetitNombre ← Échelle de Couleur → GrandNombre", rotation=270, labelpad=15
+# Tracé circulaire avec bordures pour bien séparer les segments
+patches, _ = ax.pie(
+    [1] * n, startangle=90, wedgeprops={"edgecolor": "#0D1117", "linewidth": 1.5}
 )
 
+# --- COLORBAR STYLISÉE ---
+norm = mcolors.Normalize(vmin=mini, vmax=maxi)
+sm = cm.ScalarMappable(cmap=COLOR_MAP, norm=norm)
+sm.set_array([])
 
-# on colori avec liste melangé
+cbar = fig.colorbar(sm, ax=ax, fraction=0.03, pad=0.08)
+cbar.outline.set_edgecolor("#30363D")
+cbar.ax.yaxis.set_tick_params(color="#8B949E", labelcolor="#8B949E")
+cbar.set_label(
+    "VALEURS : MIN → MAX", color="#58A6FF", fontsize=10, fontweight="bold", labelpad=20
+)
+
+# Initialisation des couleurs
 for i, patch in enumerate(patches):
     patch.set_facecolor(obtenir_couleur(ma_liste[i]))
 
-# ---> recoit la liste a chq etape du tri et change les couleurs
 
-
+# --- MISE À JOUR ---
 def update(liste_etape, patches):
     for i, patch in enumerate(patches):
-        valeur = liste_etape[i]
-        patch.set_facecolor(obtenir_couleur(valeur))
+        patch.set_facecolor(obtenir_couleur(liste_etape[i]))
     return patches
 
 
-generateur = tri_insertion_anime(
-    ma_liste
-)  # generateur contient la liste etape par etape
+generateur = tri_insertion_anime(ma_liste)
 
 ani = animation.FuncAnimation(
-    fig,  # = fenetre
-    update,  # change les part en couleur
-    frames=generateur,  # chaque etape que le yield va nous donner
+    fig,
+    update,
+    frames=generateur,
     fargs=(patches,),
-    interval=100,  # Vitesse : 100ms pour que ce soit plus lisible avec la légende
+    interval=50,  # Un peu plus rapide pour fluidifier le décalage
     repeat=False,
-    blit=True,  # optimisation change juste la couleur des part
+    blit=True,
     cache_frame_data=False,
 )
 
-plt.title(f"Visualisation en direct du Tri par Insertion sur {nom_fichier}\n")
+plt.title(
+    f"MONITORING FLUX : TRI PAR INSERTION",
+    color="#58A6FF",
+    fontsize=16,
+    fontweight="bold",
+    pad=20,
+)
+
+plt.tight_layout()
 plt.show()
