@@ -1,8 +1,10 @@
 import customtkinter as ctk
-import subprocess
+import os
+
+
+from graphic_tous import GraphicTous
 from sous_menu import StableMenu
 from sous_menu2 import InstableMenu
-from analysepage import AnalysePage
 
 
 class App(ctk.CTk):
@@ -10,7 +12,7 @@ class App(ctk.CTk):
         super().__init__()
 
         self.title("Algorithme de Tri - Menu Principal")
-        self.geometry("600x500")
+        self.geometry("600x600")  # Un peu plus grand pour tout caser
 
         # Titre Principal
         self.label = ctk.CTkLabel(
@@ -44,25 +46,34 @@ class App(ctk.CTk):
         )
         self.btn_instable.pack(pady=15)
 
-    def ouvrir_menu_stable(self):
-        print("Ouverture du menu des Tris Stables...")
-        # Ici tu créeras une nouvelle fenêtre ou tu changeras le contenu de celle-ci
+        # --- BOUTON COMPARAISON GÉNÉRALE ---
+        self.btn_compare_tous = ctk.CTkButton(
+            self,
+            text="📈 COURBES DE COMPLEXITÉ (TOUS)",
+            fg_color="#E76F51",
+            hover_color="#A34D37",
+            width=350,
+            height=60,
+            font=("Arial", 14, "bold"),
+            command=self.ouvrir_menu_comparaison_tous,
+        )
+        self.btn_compare_tous.pack(pady=30)
 
-    def ouvrir_menu_instable(self):
-        print("Ouverture du menu des Tris Instables...")
-        # Idem pour les Tris Instables
-
     def ouvrir_menu_stable(self):
-        # On crée une instance de la fenêtre définie dans sous_menu.py
         self.nouvelle_fenetre = StableMenu(self)
-        # On la met au premier plan
         self.nouvelle_fenetre.focus()
 
     def ouvrir_menu_instable(self):
-        # On crée une instance de la fenêtre définie dans sous_menu.py
         self.nouvelle_fenetre = InstableMenu(self)
-        # On la met au premier plan
         self.nouvelle_fenetre.focus()
+
+    def ouvrir_menu_comparaison_tous(self):
+        """Lance la fenêtre des courbes de complexité."""
+        try:
+            # On instancie la classe du fichier Graphic_tous.py
+            self.nouvelle_fenetre = GraphicTous(self)
+        except Exception as e:
+            print(f"Erreur lors de l'ouverture du graphique : {e}")
 
 
 if __name__ == "__main__":
