@@ -1,7 +1,7 @@
 import customtkinter as ctk
 import os
 
-
+from graphic_ram import GraphRAM
 from graphic_tous import GraphicTous
 from sous_menu import StableMenu
 from sous_menu2 import InstableMenu
@@ -46,10 +46,10 @@ class App(ctk.CTk):
         )
         self.btn_instable.pack(pady=15)
 
-        # --- BOUTON COMPARAISON GÉNÉRALE ---
+        # --- BOUTON COMPARAISON COMPLEXITE ---
         self.btn_compare_tous = ctk.CTkButton(
             self,
-            text="📈 COURBES DE COMPLEXITÉ (TOUS)",
+            text="COURBES DE COMPLEXITÉ",
             fg_color="#E76F51",
             hover_color="#A34D37",
             width=350,
@@ -58,6 +58,19 @@ class App(ctk.CTk):
             command=self.ouvrir_menu_comparaison_tous,
         )
         self.btn_compare_tous.pack(pady=30)
+
+        # --- BOUTON COMPARAISON RAM---
+        self.btn_compare_ram = ctk.CTkButton(
+            self,
+            text="ANALYSE RAM",
+            fg_color="#E76F51",
+            hover_color="#A34D37",
+            width=350,
+            height=60,
+            font=("Arial", 14, "bold"),
+            command=self.ouvrir_menu_ram,
+        )
+        self.btn_compare_ram.pack(pady=30)
 
     def ouvrir_menu_stable(self):
         self.nouvelle_fenetre = StableMenu(self)
@@ -72,6 +85,12 @@ class App(ctk.CTk):
         try:
             # On instancie la classe du fichier Graphic_tous.py
             self.nouvelle_fenetre = GraphicTous(self)
+        except Exception as e:
+            print(f"Erreur lors de l'ouverture du graphique : {e}")
+
+    def ouvrir_menu_ram(self):
+        try:
+            self.nouvelle_fenetre = GraphRAM(self)
         except Exception as e:
             print(f"Erreur lors de l'ouverture du graphique : {e}")
 
