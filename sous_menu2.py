@@ -1,12 +1,10 @@
 import customtkinter as ctk
-import time
-import random
-import json
 import os
-import psutil  # Pour la RAM
+import engine  # Importation du moteur de benchmark
+import sorting  # Importation des classes de tri
 from analysepage import AnalysePage
 
-# Attention : vérifie que tes fonctions s'appellent bien TriBulle ou tribulle (la casse compte !)
+# Import des classes spécifiques
 from sorting import TriPeigne, TriSelection, TriRapide, TriTas
 
 
@@ -14,10 +12,13 @@ class InstableMenu(ctk.CTkToplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.title("Tris Instables - Configuration")
-        self.geometry("500x650")  # Un peu plus haut pour le texte
+        self.geometry("500x750")  # Augmenté pour laisser de la place au combo
 
         # S'assurer que la fenêtre passe devant
         self.attributes("-topmost", True)
+
+        # --- INITIALISATION DU MOTEUR (INDISPENSABLE) ---
+        self.runner = engine.BenchmarkRunner()
 
         # --- TITRE ---
         self.label = ctk.CTkLabel(
@@ -25,101 +26,114 @@ class InstableMenu(ctk.CTkToplevel):
         )
         self.label.pack(pady=20)
 
+        # --- CHOIX DU FICHIER POUR LA COMPARAISON ---
+        self.label_file = ctk.CTkLabel(self, text="Choisir le fichier pour comparer :")
+        self.label_file.pack(pady=5)
+
+        self.options_listes = [
+            "json_data/short_rd.json",
+            "json_data/short_rv.json",
+            "json_data/medium_rd.json",
+            "json_data/medium_rv.json",
+            "json_data/large_rd.json",
+            "json_data/large_rv.json",
+        ]
+        self.combo_liste = ctk.CTkComboBox(self, values=self.options_listes, width=300)
+        self.combo_liste.pack(pady=5)
+        self.combo_liste.set("json_data/short_rd.json")
+
         # --- BOUTONS INDIVIDUELS ---
-        # Pour le Tri à Peigne
-        self.btn_peigne = ctk.CTkButton(
-            self,
+        self.frame_individuel = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_individuel.pack(pady=20)
+
+        # Tri à Peigne
+        ctk.CTkButton(
+            self.frame_individuel,
             text="Lancer Tri Peigne",
             command=lambda: AnalysePage(self, "Tri à Peigne", TriPeigne),
-        )
-        self.btn_peigne.pack(pady=10)
+        ).pack(pady=10)
 
-        # Pour le Tri Rapide
-        self.btn_rapide = ctk.CTkButton(
-            self,
+        # Tri Rapide
+        ctk.CTkButton(
+            self.frame_individuel,
             text="Lancer Tri Rapide",
             command=lambda: AnalysePage(self, "Tri Rapide", TriRapide),
-        )
-        self.btn_rapide.pack(pady=10)
+        ).pack(pady=10)
 
-        # Pour le Tri par Sélection
-        self.btn_selection = ctk.CTkButton(
-            self,
+        # Tri par Sélection
+        ctk.CTkButton(
+            self.frame_individuel,
             text="Lancer Tri Sélection",
             command=lambda: AnalysePage(self, "Tri par Sélection", TriSelection),
-        )
-        self.btn_selection.pack(pady=10)
+        ).pack(pady=10)
 
-        # Pour le Tri par Tas
-        self.btn_tas = ctk.CTkButton(
-            self,
+        # Tri par Tas
+        ctk.CTkButton(
+            self.frame_individuel,
             text="Lancer Tri par Tas",
             command=lambda: AnalysePage(self, "Tri par Tas", TriTas),
-        )
-        self.btn_tas.pack(pady=10)
+        ).pack(pady=10)
 
-        # --- SECTION COMPARAISON ---
-        self.separator = ctk.CTkFrame(self, height=2, fg_color="gray")
-        self.separator.pack(fill="x", pady=20, padx=20)
-
-        self.btn_compare = ctk.CTkButton(
+        # --- BOUTON COMPARAISON ---
+        self.btn_compare_instables = ctk.CTkButton(
             self,
-            text=" COMPARER TOUS LES INSTABLES",
-            fg_color="#2A9D8F",
-            hover_color="#21867A",
-            command=self.comparer_algos,
+            text="📊 COMPARER LES 4 INSTABLES",
+            fg_color="#E76F51",  # Couleur corail pour les instables
+            hover_color="#A34D37",
+            height=50,
+            font=("Arial", 14, "bold"),
+            command=self.afficher_comparaison_instables,
         )
-        self.btn_compare.pack(pady=20)
+        self.btn_compare_instables.pack(pady=20)
 
-        self.result_box = ctk.CTkTextbox(self, width=450, height=200)
-        self.result_box.pack(pady=10)
+    def afficher_comparaison_instables(self):
+        import matplotlib.pyplot as plt
 
-    def comparer_algos(self):
-        chemin_fichier = "short_rv.json"
-
-        if not os.path.exists(chemin_fichier):
-            self.result_box.delete("0.0", "end")
-            self.result_box.insert("0.0", f"Erreur : {chemin_fichier} introuvable.")
+        nom_fichier = self.combo_liste.get()
+        if not os.path.exists(nom_fichier):
+            print(f"Erreur : {nom_fichier} introuvable")
             return
 
-        with open(chemin_fichier, "r") as f:
-            liste_originale = json.load(f)
-
-        # TOUT LE CODE CI-DESSOUS DOIT ÊTRE ALIGNÉ ICI (DANS LA FONCTION)
-        taille = len(liste_originale)
-        resultats = f"📊 COMPARAISON (Fichier: {chemin_fichier} | Taille: {taille})\n"
-        resultats += "-" * 55 + "\n"
-        resultats += f"{'Algorithme':<15} | {'Temps (s)':<12} | {'RAM (MB)':<10}\n"
-        resultats += "-" * 55 + "\n"
-
-        # On utilise les noms exacts de tes imports depuis sorting.py
-        algos = {
+        # 1. Préparation (Correction des références aux classes)
+        dict_instables = {
+            "Tas": TriTas,
             "Peigne": TriPeigne,
             "Rapide": TriRapide,
-            "Selection": TriSelection,
-            "Tas": TriTas,
+            "Sélection": TriSelection,
         }
-        process = psutil.Process(os.getpid())
 
-        for nom, fonction in algos.items():
-            liste_a_trier = liste_originale.copy()
+        noms = []
+        temps = []
 
-            mem_avant = process.memory_info().rss / 1024 / 1024
-            start = time.time()
+        # 2. Calculs (Utilisation de self.runner)
+        for nom, classe in dict_instables.items():
+            self.runner.lancer(classe, nom_fichier)
+            res = self.runner.resultats[-1]
+            noms.append(nom)
+            temps.append(res["temps"])
 
-            fonction(liste_a_trier)  # Appel de la fonction
+        # 3. Graphique
+        fig, ax = plt.subplots(figsize=(8, 6))
+        # 4 couleurs pour 4 barres
+        couleurs = ["#E76F51", "#F4A261", "#E9C46A", "#2A9D8F"]
+        bars = ax.bar(noms, temps, color=couleurs)
 
-            end = time.time()
-            mem_apres = process.memory_info().rss / 1024 / 1024
-            conso_mem = mem_apres - mem_avant
+        ax.set_ylabel("Temps en secondes")
+        ax.set_title(
+            f"Comparaison des Tris Instables\nFichier : {os.path.basename(nom_fichier)}"
+        )
 
-            resultats += (
-                f"{nom:<15} | {end - start:<12.5f} | {max(0, conso_mem):<10.2f}\n"
+        # Ajout des étiquettes au-dessus des barres
+        for bar in bars:
+            height = bar.get_height()
+            ax.text(
+                bar.get_x() + bar.get_width() / 2.0,
+                height,
+                f"{height:.6f}s",
+                ha="center",
+                va="bottom",
+                fontweight="bold",
             )
 
-        self.result_box.delete("0.0", "end")
-        self.result_box.insert("0.0", resultats)
-
-    def lancer_un_tri(self, nom):
-        # Ici tu pourras plus tard appeler la visualisation spécifique
-        print(f"Lancement du {nom}...")
+        plt.tight_layout()
+        plt.show()
